@@ -16,7 +16,10 @@ const auth = async (req, res, next) => {
         req.user = user
         next()
     } catch (error) {
-        res.status(401).send({error: 'Please provide a valid authentication'})
+        res.status(401).send({
+            status: false,
+            error: 'Please provide a valid authentication'
+        })
     }
 
 }

@@ -14,9 +14,30 @@ router.post('/users', async (req, res) => {
         await user.save()
         sendWelcomeEmail(user.email, user.name)
         const token = await user.generateAuthToken();
-        res.status(201).send({user, token})
+        res.status(201).send({
+            status: true,
+            data: user, 
+            token,
+            message: 'User created successfully'
+        })
     } catch (error) {
-        res.status(400).send(error)
+        if(error.name === 'MongoError' && error.code === 11000) {
+             res.status(400).send({
+                status: false,
+                error: 'Email already exist in the database'
+            }) 
+        } else if (error.errors.password.name === 'ValidatorError'){
+            res.status(400).send({
+                status: false,
+                error: error.message
+            })
+        } else {
+            res.status(500).send({
+                status: false,
+                message: 'Someting went wrong'
+            })
+        } 
+        
     }
 
     // user.save().then(() => {
@@ -30,9 +51,17 @@ router.post('/users/login', async (req, res) => {
     try {
         const user = await User.findByCredentials(req.body.email, req.body.password)
         const token = await user.generateAuthToken();
-        res.send({user, token} )
+        res.status(200).send({
+            status: true,
+            data: user, 
+            token,
+            message: 'User logged in successfully'
+        })
     } catch (error) {
-        res.status(400).send('Invalid credentials provided')
+        res.status(400).send({
+            status: false,
+            error: 'Invalid credentials provided'
+        })
     }
 }) 
 
@@ -42,27 +71,37 @@ router.post('/users/logout', auth, async (req, res) => {
             return token.token !== req.token
         })
         await req.user.save()
-        res.send('successfully logged out')
+        res.send({
+            status: true,
+            message: 'successfully logged out'
+        })
     } catch (error) {
-        res.status(500).send()
+        res.status(500).send({
+            status: false,
+            message: 'Someting went wrong'
+        })
     }
 })
 
-router.post('/users/logoutAll', auth, async (req, res) => {
-    try {
-        req.user.tokens = []
-        await req.user.save()
-        res.send('successfully logged out of all devices')
-        await req.user.save()
-        res.send('successfully loggd out')
-    } catch (error) {
-        res.status(500).send()
-    }
-})
+// router.post('/users/logoutAll', auth, async (req, res) => {
+//     try {
+//         req.user.tokens = []
+//         await req.user.save()
+//         res.send('successfully logged out of all devices')
+//         await req.user.save()
+//         res.send('successfully loggd out')
+//     } catch (error) {
+//         res.status(500).send()
+//     }
+// })
 
 router.get('/users/me', auth, async (req, res) => {
 
-  res.send(req.user)
+  res.send({
+      status: true,
+      data: req.user,
+      message: 'User profile fetched successfully'
+    })
     // User.find({}).then((users) => {
     //     res.status(201).send(users)
     // }).catch((error) => {
@@ -78,7 +117,10 @@ router.patch('/users/me', auth, async (req, res) => {
     })
 
     if (!isValidOperation) {
-        return res.status(400).send({ error: 'Invalid Updates!'})
+        return res.status(400).send({ 
+            status: false,
+            error: 'Invalid Updates!'
+        })
     }
 
     try {
@@ -88,9 +130,29 @@ router.patch('/users/me', auth, async (req, res) => {
 
         await req.user.save()
 
-      res.send(req.user)
+        res.send({
+            status: true,
+            data: req.user,
+            message: 'User updated successfully'
+          })
     } catch (error) {
-        res.status(400).send()
+        if(error.name === 'MongoError' && error.code === 11000) {
+             res.status(400).send({
+                status: false,
+                error: 'Email already exist in the database'
+            }) 
+        } else if (error.errors.password.name === 'ValidatorError'){
+            res.status(400).send({
+                status: false,
+                error: error.message
+            })
+        } else {
+            res.status(500).send({
+                status: false,
+                message: 'Someting went wrong'
+            })
+        } 
+        
     }
 
 })
@@ -105,10 +167,16 @@ router.delete('/users/me', auth, async (req, res) => {
         // }
         await req.user.remove()
         sendCancellationEmail(req.user.email, req.user.name)
-        res.send('User deleted successfully')
+        res.send({
+            status: true,
+            message: 'User deleted successfully'
+        })
         
     } catch (error) {
-        res.status(500).send(error)
+        res.status(500).send({
+            status: false,
+            error
+        })
     }
 })
 
@@ -131,15 +199,18 @@ router.post('/users/me/avatar', auth, upload.single('avatar'), async (req, res) 
     await req.user.save()
     res.send()
 }, (error, req, res, next) => {
-    res.status(400).send( { error: error.message })
+    res.status(400).send( { status: false, error: error.message })
 })
 
 router.delete('/users/me/avatar', auth, async (req, res) => {
     req.user.avatar = undefined
     await req.user.save()
-    res.send('Avatar deleted successfully')
+    res.send({
+        status: true,
+        message: 'Avatar deleted successfully'
+    })
 }, (error, req, res, next) => {
-    res.status(400).send( { error: error.message })
+    res.status(400).send( { status: false, error: error.message })
 })
 
 router.get('/users/:id/avatar', async (req, res) => {
@@ -152,9 +223,14 @@ router.get('/users/:id/avatar', async (req, res) => {
         }
 
         res.set('Content-type', 'image/png')
-        res.send(user.avatar)
+        res.send({
+            status: true, 
+            data: user.avatar})
     } catch (error) {
-        res.status(404).send(error)
+        res.status(404).send({
+            status: false, 
+            error
+        })
     }
 })
 

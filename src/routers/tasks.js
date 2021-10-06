@@ -12,7 +12,11 @@ router.post('/tasks', auth, async (req, res) => {
 
     try {
         await task.save()
-        res.status(201).send(task)
+        res.status(201).send({
+            status: true,
+            data: task,
+            message: 'Task created successfully'
+        }) 
     } catch (error) {
         res.status(400).send(error)
     }
@@ -42,7 +46,11 @@ router.get('/tasks', auth, async (req, res) => {
                 skip: parseInt(req.query.skip)
             }
         }).execPopulate()
-        res.send(req.user.tasks)
+        res.send({
+            status: true,
+            data: req.user.tasks,
+            message: 'Tasks fetched successfully'
+        })
     } catch (error) {
         res.status(500).send(error)
     }
@@ -62,7 +70,11 @@ router.get('/tasks/:id', auth, async (req, res) => {
         if (!task) {
             return res.status(404).send()
         }
-        res.send(task)
+        res.send({
+            status: true,
+            data: task,
+            message: 'Task fetched successfully'
+        })
     } catch (error) {
         res.status(500).send(error)
     }
@@ -86,7 +98,7 @@ router.put('/tasks/:id', auth, async (req, res) => {
     })
 
     if (!isValidOperation) {
-        return res.status(400).send({ error: 'Invalid Updates!'})
+        return res.status(400).send({ status: false, error: 'Invalid Updates!'})
     }
 
     try {
@@ -97,7 +109,11 @@ router.put('/tasks/:id', auth, async (req, res) => {
       }
       updates.forEach((update) => task[update] = req.body[update])
       await task.save()
-      res.send(task)
+      res.status(201).send({
+        status: true,
+        data: task,
+        message: 'Task updated successfully'
+    }) 
     } catch (error) {
         res.status(400).send()
     }
@@ -113,7 +129,10 @@ router.delete('/tasks/:id', auth, async (req, res) => {
         if (!task) {
             return res.status(404).send()
         }
-        res.send(task)
+        res.send({
+            status: true,
+            message: 'Task deleted successfully'
+        })
         
     } catch (error) {
         res.status(500).send(error)
