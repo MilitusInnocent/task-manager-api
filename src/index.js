@@ -15,6 +15,22 @@ app.use(express.json())
 app.use(userRouter)
 app.use(taskRouter)
 
+app.use('/', function(req, res, next) {
+    return res.status(404).send({
+        status: 'error',
+        message: 'Endpoint not found',
+        data: null
+    })
+})
+
+app.use('/', function(err, req, res, next) {
+    return res.status(500).send({
+        status: 'error',
+        message: 'Internal server error',
+        data: null
+    })
+})
+
 app.listen(port, () => {
     console.log('Listening on port ' + port)   
 })
